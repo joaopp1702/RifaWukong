@@ -72,7 +72,7 @@ async function confirmarCotas() {
       });
     }
 
-    const query = `?nome=${encodeURIComponent(nome)}&wpp=${encodeURIComponent(whatsapp)}&cotas=${cotasSelecionadas.join(",")}`;
+const query = `?nome=${encodeURIComponent(nome)}&telefone=${encodeURIComponent(whatsapp)}&cotas=${cotasSelecionadas.join(",")}`;
     window.location.href = "pagamento.html" + query;
   } catch (error) {
     console.error("Erro ao salvar cotas no Firebase:", error);

@@ -6,7 +6,6 @@
   <title>Rifa do Jão</title>
   <link rel="stylesheet" href="style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&display=swap" rel="stylesheet">
-
 </head>
 <body>
   <div class="container">
@@ -25,7 +24,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
-  <!-- Configuração Firebase -->
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyAtB6H1PnAjM64GWyuo9PfI6iubJfH7YgE",
@@ -47,30 +45,46 @@
     const TOTAL_COTAS = 150;
     let cotasSelecionadas = [];
     const db = firebase.database();
+function atualizarCotas() {
+  db.ref("cotas").once("value").then(snapshot => {
+    const ocupadas = snapshot.val() || {};
+    cotasContainer.innerHTML = "";
+    cotasSelecionadas = [];
 
-    function atualizarCotas() {
-      db.ref("cotas").once("value").then(snapshot => {
-        const ocupadas = snapshot.val() || {};
-        cotasContainer.innerHTML = "";
-        cotasSelecionadas = [];
+    for (let i = 1; i <= TOTAL_COTAS; i++) {
+      const cota = document.createElement("div");
+      cota.textContent = i;
 
-        for (let i = 1; i <= TOTAL_COTAS; i++) {
-          const cota = document.createElement("div");
-          cota.textContent = i;
+      const dadosCota = ocupadas[i];
 
-          if (ocupadas[i]) {
-            cota.classList.add("ocupada");
+      if (dadosCota && dadosCota.status === "pago") {
+        cota.classList.add("paga");
+        cota.style.background = "#b30000";
+        cota.style.color = "#fff";
+        cota.style.cursor = "not-allowed";
+      } else if (dadosCota && dadosCota.status === "reservada") {
+        cota.classList.add("ocupada");
+        cota.style.background = "#999";
+        cota.style.color = "#fff";
+        cota.style.cursor = "not-allowed";
+      } else {
+        cota.onclick = () => {
+          if (cota.classList.contains("selecionada")) {
+            cota.classList.remove("selecionada");
+            cotasSelecionadas = cotasSelecionadas.filter(n => n !== i);
           } else {
-            cota.onclick = () => {
-              if (cota.classList.contains("selecionada")) {
-                cota.classList.remove("selecionada");
-                cotasSelecionadas = cotasSelecionadas.filter(n => n !== i);
-              } else {
-                cota.classList.add("selecionada");
-                cotasSelecionadas.push(i);
-              }
-            };
+            cota.classList.add("selecionada");
+            cotasSelecionadas.push(i);
           }
+        };
+      }
+
+      cotasContainer.appendChild(cota);
+    }
+  }).catch(error => {
+    console.error("Erro ao carregar cotas do Firebase:", error);
+  });
+}
 
           cotasContainer.appendChild(cota);
         }
@@ -86,10 +100,10 @@
       }
 
       const nome = prompt("Digite seu nome:");
-      const cpf = prompt("Digite seu CPF:");
+      const telefone = prompt("Digite seu número de WhatsApp (com DDD):");
 
-      if (!nome || !cpf) {
-        alert("Nome e CPF são obrigatórios!");
+      if (!nome || !telefone) {
+        alert("Nome e telefone são obrigatórios!");
         return;
       }
 
@@ -106,12 +120,12 @@
         cotasSelecionadas.forEach(numero => {
           db.ref("cotas/" + numero).set({
             nome: nome,
-            cpf: cpf,
+            telefone: telefone,
             status: "reservada"
           });
         });
 
-        const query = `?nome=${encodeURIComponent(nome)}&cpf=${encodeURIComponent(cpf)}&cotas=${cotasSelecionadas.join(",")}`;
+        const query = `?nome=${encodeURIComponent(nome)}&telefone=${encodeURIComponent(telefone)}&cotas=${cotasSelecionadas.join(",")}`;
         window.location.href = "pagamento.html" + query;
       });
     }
