@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pagamento da Rifa - Jão</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Pagamento da Rifa</h1>
+    <p>Obrigado por reservar suas cotas! Confira abaixo:</p>
+
+    <div id="info"></div>
+
+    <h2>Chave Pix para pagamento:</h2>
+    <code id="pixKey" style="font-size:1.2em; background:#f0f0f0; padding:8px; border-radius:5px; user-select: all;">vlogsjtv5@gmail.com</code>
+
+    <p>Envie o comprovante de pagamento pelo WhatsApp para confirmar sua participação.</p>
+
+    <button onclick="enviarComprovante()">Enviar Comprovante</button>
+  </div>
+
+  <script>
+    // Pega os parâmetros da URL
+    const params = new URLSearchParams(window.location.search);
+    const nome = params.get("nome");
+    const cpf = params.get("cpf");
+    const cotas = params.get("cotas");
+
+    const infoDiv = document.getElementById("info");
+    if (nome && cpf && cotas) {
+      infoDiv.innerHTML = `
+        <p><strong>Nome:</strong> ${nome}</p>
+        <p><strong>WhatsApp:</strong> ${whatsapp}</p>
+        <p><strong>Cotas reservadas:</strong> ${cotas}</p>
+        <p><strong>Total:</strong> R$${cotas.split(",").length}</p>
+      `;
+    } else {
+      infoDiv.textContent = "Dados incompletos. Volte para a página inicial.";
+    }
+
+    function enviarComprovante() {
+    const mensagem = `Olá! Fiz o pagamento da rifa com os seguintes dados:\n\nNome: ${nome}\nCPF: ${cpf}\nCotas: ${cotas}\nValor: R$${cotas.split(",").length * 2},00\n\nSegue o comprovante.`;      const seuNumero = "+5521969880437"; // só números
+      const url = `https://wa.me/${seuNumero}?text=${encodeURIComponent(msg)}`;
+      window.open(url, "_blank");
+    }
+  </script>
+</body>
+</html>

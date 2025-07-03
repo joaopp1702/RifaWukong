@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Rifa do Jão</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&display=swap" rel="stylesheet">
+
+</head>
+<body>
+  <div class="container">
+    <h1>🎮 Rifa do Controle 8BitDo</h1>
+    <p class="descricao">Participe da rifa e concorra a um controle 8BitDo Wukong compatível com PC e celular!</p>
+
+    <img src="controle.jpg" alt="Prêmio da Rifa" class="premio-img" />
+
+    <h2>Escolha seus números (R$2 cada):</h2>
+    <div id="cotas" class="cotas"></div>
+
+    <button onclick="confirmarCotas()">Reservar Cotas</button>
+  </div>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+  <!-- Configuração Firebase -->
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAtB6H1PnAjM64GWyuo9PfI6iubJfH7YgE",
+      authDomain: "rifa-d7eb9.firebaseapp.com",
+      databaseURL: "https://rifa-d7eb9-default-rtdb.firebaseio.com",
+      projectId: "rifa-d7eb9",
+      storageBucket: "rifa-d7eb9.firebasestorage.app",
+      messagingSenderId: "1073573581341",
+      appId: "1:1073573581341:web:0cc0a60ac34ac3c0de6cf4",
+      measurementId: "G-ZLP1NR8603"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+  </script>
+
+  <!-- Script Principal -->
+  <script>
+    const cotasContainer = document.getElementById("cotas");
+    const TOTAL_COTAS = 150;
+    let cotasSelecionadas = [];
+    const db = firebase.database();
+
+    function atualizarCotas() {
+      db.ref("cotas").once("value").then(snapshot => {
+        const ocupadas = snapshot.val() || {};
+        cotasContainer.innerHTML = "";
+        cotasSelecionadas = [];
+
+        for (let i = 1; i <= TOTAL_COTAS; i++) {
+          const cota = document.createElement("div");
+          cota.textContent = i;
+
+          if (ocupadas[i]) {
+            cota.classList.add("ocupada");
+          } else {
+            cota.onclick = () => {
+              if (cota.classList.contains("selecionada")) {
+                cota.classList.remove("selecionada");
+                cotasSelecionadas = cotasSelecionadas.filter(n => n !== i);
+              } else {
+                cota.classList.add("selecionada");
+                cotasSelecionadas.push(i);
+              }
+            };
+          }
+
+          cotasContainer.appendChild(cota);
+        }
+      }).catch(error => {
+        console.error("Erro ao carregar cotas:", error);
+      });
+    }
+
+    function confirmarCotas() {
+      if (cotasSelecionadas.length === 0) {
+        alert("Selecione pelo menos uma cota.");
+        return;
+      }
+
+      const nome = prompt("Digite seu nome:");
+      const cpf = prompt("Digite seu CPF:");
+
+      if (!nome || !cpf) {
+        alert("Nome e CPF são obrigatórios!");
+        return;
+      }
+
+      db.ref("cotas").once("value").then(snapshot => {
+        const ocupadas = snapshot.val() || {};
+        const indisponiveis = cotasSelecionadas.filter(n => ocupadas[n]);
+
+        if (indisponiveis.length > 0) {
+          alert("As cotas já reservadas: " + indisponiveis.join(", "));
+          atualizarCotas();
+          return;
+        }
+
+        cotasSelecionadas.forEach(numero => {
+          db.ref("cotas/" + numero).set({
+            nome: nome,
+            cpf: cpf,
+            status: "reservada"
+          });
+        });
+
+        const query = `?nome=${encodeURIComponent(nome)}&cpf=${encodeURIComponent(cpf)}&cotas=${cotasSelecionadas.join(",")}`;
+        window.location.href = "pagamento.html" + query;
+      });
+    }
+
+    atualizarCotas();
+  </script>
+</body>
+</html>
