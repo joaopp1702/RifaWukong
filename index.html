@@ -3,132 +3,72 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Reservar Cotas - Rifa do Jão</title>
-  <style>
-    body {
-      font-family: 'Cinzel', serif;
-      margin: 0; padding: 20px;
-      background: #111;
-      color: #f9b234;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-    }
-    h1 {
-      margin-bottom: 20px;
-    }
-    #cotas {
-      display: grid;
-      grid-template-columns: repeat(10, 50px);
-      gap: 8px;
-      max-width: 600px;
-      margin-bottom: 30px;
-    }
-    #cotas div {
-      background: #222;
-      border: 2px solid #555;
-      border-radius: 6px;
-      color: #fff;
-      font-weight: bold;
-      text-align: center;
-      line-height: 50px;
-      cursor: pointer;
-      user-select: none;
-      transition: 0.2s;
-    }
-    #cotas div.selecionada {
-      background: #f9b234;
-      color: #111;
-      border-color: #f9b234;
-    }
-    #cotas div.ocupada {
-      background: #999;
-      border-color: #777;
-      cursor: not-allowed;
-      color: #ddd;
-    }
-    #cotas div.paga {
-      background: #b30000;
-      border-color: #7a0000;
-      cursor: not-allowed;
-      color: #fff;
-    }
-    button {
-      background: linear-gradient(90deg, #f9b234, #d88b00);
-      border: none;
-      padding: 12px 30px;
-      border-radius: 8px;
-      font-size: 16px;
-      font-weight: bold;
-      cursor: pointer;
-      color: #000;
-      transition: filter 0.3s ease;
-    }
-    button:hover {
-      filter: brightness(1.1);
-    }
-  </style>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
+  <title>Rifa do Jão</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&display=swap" rel="stylesheet" />
 </head>
 <body>
-  <h1>Reserve suas cotas!</h1>
+  <div class="container">
+    <h1>🎮 Rifa do Controle 8BitDo</h1>
+    <p class="descricao">Participe da rifa e concorra a um controle 8BitDo Wukong compatível com PC e celular!</p>
 
-  <div id="cotas"></div>
-  <button id="confirmarBtn">Confirmar cotas selecionadas</button>
+    <img src="controle.jpg" alt="Prêmio da Rifa" class="premio-img" />
+
+    <h2>Escolha seus números (R$2 cada):</h2>
+    <div id="cotas" class="cotas"></div>
+
+    <button id="confirmarBtn">Reservar Cotas</button>
+  </div>
+
+  <!-- Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
 
   <script>
-    // Configurações
-    const TOTAL_COTAS = 150;
-    const SUPABASE_URL = "https://oiwhhumfobnpnwxzdtaa.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9pd2hodW1mb2JucG53eHpkdGFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5MTM2MTQsImV4cCI6MjA2NzQ4OTYxNH0.H24RF9v5zHOddlXtU_kU_SEuV7xpcZEe_lQZRhLzvFM";
-    const URL_EDGE_FUNCTION = "https://oiwhhumfobnpnwxzdtaa.functions.supabase.co/reservarCotas";
-
-    // Inicializa Supabase
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // Configure aqui sua URL e chave do Supabase
+    const supabaseUrl = "https://oiwhhumfobnpnwxzdtaa.supabase.co";
+    const supabaseKey = "SUA_CHAVE_PUBLICA_ANONIMA";
+    const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
     const cotasContainer = document.getElementById("cotas");
     const confirmarBtn = document.getElementById("confirmarBtn");
+    const TOTAL_COTAS = 150;
 
     let cotasSelecionadas = [];
 
-    // Busca cotas reservadas e pagas para marcar na interface
-    async function buscarCotas() {
-      const { data, error } = await supabase
+    // Busca todas as cotas e seus status
+    async function atualizarCotas() {
+      cotasContainer.innerHTML = "";
+      cotasSelecionadas = [];
+
+      const { data: cotas, error } = await supabase
         .from("cotas")
         .select("id, status");
 
       if (error) {
-        alert("Erro ao buscar cotas: " + error.message);
-        return [];
+        console.error("Erro ao carregar cotas do Supabase:", error);
+        cotasContainer.textContent = "Erro ao carregar cotas.";
+        return;
       }
-      return data;
-    }
 
-    // Monta grid com cotas e estados
-    async function montarCotas() {
-      const cotas = await buscarCotas();
-      const ocupadasMap = {};
-
-      cotas.forEach(c => {
-        ocupadasMap[c.id] = c.status;
+      const statusMap = {};
+      cotas.forEach(cota => {
+        statusMap[cota.id] = cota.status;
       });
-
-      cotasContainer.innerHTML = "";
-      cotasSelecionadas = [];
 
       for(let i = 1; i <= TOTAL_COTAS; i++) {
         const div = document.createElement("div");
         div.textContent = i;
 
-        const status = ocupadasMap[i];
+        const status = statusMap[i];
 
         if(status === "pago") {
           div.classList.add("paga");
           div.title = "Cota paga";
-        } else if (status === "reservada") {
+          div.style.cursor = "not-allowed";
+        } else if(status === "reservada") {
           div.classList.add("ocupada");
           div.title = "Cota reservada";
+          div.style.cursor = "not-allowed";
         } else {
           div.onclick = () => {
             if(div.classList.contains("selecionada")) {
@@ -140,14 +80,15 @@
             }
           };
         }
+
         cotasContainer.appendChild(div);
       }
     }
 
-    // Confirmar reserva
-    confirmarBtn.onclick = async () => {
+    // Confirmar cotas selecionadas e reservar no Supabase
+    async function confirmarCotas() {
       if(cotasSelecionadas.length === 0) {
-        alert("Selecione pelo menos uma cota!");
+        alert("Selecione pelo menos uma cota.");
         return;
       }
 
@@ -157,39 +98,55 @@
         return;
       }
 
-      const telefone = prompt("Digite seu WhatsApp (com DDD):");
+      const telefone = prompt("Digite seu número de WhatsApp (com DDD):");
       if(!telefone) {
         alert("WhatsApp obrigatório!");
         return;
       }
 
-      try {
-        const res = await fetch(URL_EDGE_FUNCTION, {
-          method: "POST",
-          headers: {"Content-Type": "application/json"},
-          body: JSON.stringify({ nome, telefone, cotas: cotasSelecionadas })
-        });
+      // Verifica se as cotas ainda estão disponíveis
+      const { data: cotas, error } = await supabase
+        .from("cotas")
+        .select("id, status")
+        .in("id", cotasSelecionadas);
 
-        const json = await res.json();
+      if(error) {
+        alert("Erro ao verificar cotas: " + error.message);
+        return;
+      }
 
-        if(!res.ok) {
-          alert("Erro ao reservar cotas: " + (json.error || "Erro desconhecido"));
-          await montarCotas();
+      const indisponiveis = cotas.filter(c => c.status === "reservada" || c.status === "pago").map(c => c.id);
+      if(indisponiveis.length > 0) {
+        alert("As cotas já reservadas ou pagas: " + indisponiveis.join(", "));
+        await atualizarCotas();
+        return;
+      }
+
+      // Atualiza as cotas para status reservada
+      for(const numero of cotasSelecionadas) {
+        const { error } = await supabase
+          .from("cotas")
+          .update({
+            nome: nome,
+            telefone: telefone,
+            status: "reservada",
+            data_reserva: new Date().toISOString()
+          })
+          .eq("id", numero);
+
+        if(error) {
+          alert(`Erro ao reservar cota ${numero}: ${error.message}`);
           return;
         }
-
-        alert("Cotas reservadas com sucesso! Agora finalize o pagamento.");
-
-        // Redireciona para página de pagamento passando os dados
-        const query = `?nome=${encodeURIComponent(nome)}&telefone=${encodeURIComponent(telefone)}&cotas=${cotasSelecionadas.join(",")}`;
-        window.location.href = "pagamento.html" + query;
-
-      } catch(e) {
-        alert("Erro de comunicação: " + e.message);
       }
-    };
 
-    montarCotas();
+      // Redireciona para pagamento passando dados via query string
+      const query = `?nome=${encodeURIComponent(nome)}&telefone=${encodeURIComponent(telefone)}&cotas=${cotasSelecionadas.join(",")}`;
+      window.location.href = "pagamento.html" + query;
+    }
+
+    confirmarBtn.addEventListener("click", confirmarCotas);
+    atualizarCotas();
   </script>
 </body>
 </html>
