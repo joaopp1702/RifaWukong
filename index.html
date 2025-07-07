@@ -17,32 +17,29 @@
     <h2>Escolha seus números (R$2 cada):</h2>
     <div id="cotas" class="cotas"></div>
 
-    <button id="confirmarBtn">Reservar Cotas</button>
+    <button onclick="confirmarCotas()">Reservar Cotas</button>
   </div>
 
   <!-- Supabase SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
 
   <script>
-    // Configure aqui sua URL e chave do Supabase
-    const supabaseUrl = "https://oiwhhumfobnpnwxzdtaa.supabase.co";
-    const supabaseKey = "SUA_CHAVE_PUBLICA_ANONIMA";
+    // Inicialização do cliente Supabase (adicione sua URL e chave abaixo)
+    const supabaseUrl = "https://oiwhhumfobnpnwxzdtaa.supabase.co";  // Coloque sua URL real aqui
+    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9pd2hodW1mb2JucG53eHpkdGFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5MTM2MTQsImV4cCI6MjA2NzQ4OTYxNH0.H24RF9v5zHOddlXtU_kU_SEuV7xpcZEe_lQZRhLzvFM";                 // Coloque sua anon key aqui
     const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
     const cotasContainer = document.getElementById("cotas");
-    const confirmarBtn = document.getElementById("confirmarBtn");
     const TOTAL_COTAS = 150;
-
     let cotasSelecionadas = [];
 
-    // Busca todas as cotas e seus status
     async function atualizarCotas() {
       cotasContainer.innerHTML = "";
       cotasSelecionadas = [];
 
       const { data: cotas, error } = await supabase
-        .from("cotas")
-        .select("id, status");
+        .from('cotas')
+        .select('*');
 
       if (error) {
         console.error("Erro ao carregar cotas do Supabase:", error);
@@ -50,102 +47,98 @@
         return;
       }
 
-      const statusMap = {};
+      const ocupadas = {};
       cotas.forEach(cota => {
-        statusMap[cota.id] = cota.status;
+        ocupadas[parseInt(cota.id)] = cota;
       });
 
-      for(let i = 1; i <= TOTAL_COTAS; i++) {
-        const div = document.createElement("div");
-        div.textContent = i;
+      for (let i = 1; i <= TOTAL_COTAS; i++) {
+        const cota = document.createElement("div");
+        cota.textContent = i;
 
-        const status = statusMap[i];
+        const dadosCota = ocupadas[i];
 
-        if(status === "pago") {
-          div.classList.add("paga");
-          div.title = "Cota paga";
-          div.style.cursor = "not-allowed";
-        } else if(status === "reservada") {
-          div.classList.add("ocupada");
-          div.title = "Cota reservada";
-          div.style.cursor = "not-allowed";
+        if (dadosCota && dadosCota.status === "pago") {
+          cota.classList.add("paga");
+          cota.style.background = "#b30000";
+          cota.style.color = "#fff";
+          cota.style.cursor = "not-allowed";
+        } else if (dadosCota && dadosCota.status === "reservada") {
+          cota.classList.add("ocupada");
+          cota.style.background = "#999";
+          cota.style.color = "#fff";
+          cota.style.cursor = "not-allowed";
         } else {
-          div.onclick = () => {
-            if(div.classList.contains("selecionada")) {
-              div.classList.remove("selecionada");
-              cotasSelecionadas = cotasSelecionadas.filter(x => x !== i);
+          cota.onclick = () => {
+            if (cota.classList.contains("selecionada")) {
+              cota.classList.remove("selecionada");
+              cotasSelecionadas = cotasSelecionadas.filter(n => n !== i);
             } else {
-              div.classList.add("selecionada");
+              cota.classList.add("selecionada");
               cotasSelecionadas.push(i);
             }
           };
         }
 
-        cotasContainer.appendChild(div);
+        cotasContainer.appendChild(cota);
       }
     }
 
-    // Confirmar cotas selecionadas e reservar no Supabase
     async function confirmarCotas() {
-      if(cotasSelecionadas.length === 0) {
+      if (cotasSelecionadas.length === 0) {
         alert("Selecione pelo menos uma cota.");
         return;
       }
 
-      const nome = prompt("Digite seu nome ou apelido:");
-      if(!nome) {
-        alert("Nome obrigatório!");
-        return;
-      }
-
+      const nome = prompt("Digite seu nome:");
       const telefone = prompt("Digite seu número de WhatsApp (com DDD):");
-      if(!telefone) {
-        alert("WhatsApp obrigatório!");
+
+      if (!nome || !telefone) {
+        alert("Nome e telefone são obrigatórios!");
         return;
       }
 
-      // Verifica se as cotas ainda estão disponíveis
+      // Buscar as cotas selecionadas para verificar disponibilidade
       const { data: cotas, error } = await supabase
-        .from("cotas")
-        .select("id, status")
-        .in("id", cotasSelecionadas);
+        .from('cotas')
+        .select('*')
+        .in('id', cotasSelecionadas);
 
-      if(error) {
+      if (error) {
         alert("Erro ao verificar cotas: " + error.message);
         return;
       }
 
-      const indisponiveis = cotas.filter(c => c.status === "reservada" || c.status === "pago").map(c => c.id);
-      if(indisponiveis.length > 0) {
-        alert("As cotas já reservadas ou pagas: " + indisponiveis.join(", "));
-        await atualizarCotas();
+      const indisponiveis = cotas.filter(c => c.status === 'reservada' || c.status === 'pago').map(c => c.id);
+
+      if (indisponiveis.length > 0) {
+        alert("As cotas já reservadas: " + indisponiveis.join(", "));
+        atualizarCotas();
         return;
       }
 
-      // Atualiza as cotas para status reservada
-      for(const numero of cotasSelecionadas) {
+      // Atualizar cada cota para reservada
+      for (const numero of cotasSelecionadas) {
         const { error } = await supabase
-          .from("cotas")
+          .from('cotas')
           .update({
             nome: nome,
             telefone: telefone,
-            status: "reservada",
+            status: 'reservada',
             data_reserva: new Date().toISOString()
           })
-          .eq("id", numero);
+          .eq('id', numero);
 
-        if(error) {
+        if (error) {
           alert(`Erro ao reservar cota ${numero}: ${error.message}`);
           return;
         }
       }
 
-      // Redireciona para pagamento passando dados via query string
       const query = `?nome=${encodeURIComponent(nome)}&telefone=${encodeURIComponent(telefone)}&cotas=${cotasSelecionadas.join(",")}`;
       window.location.href = "pagamento.html" + query;
     }
 
-    confirmarBtn.addEventListener("click", confirmarCotas);
     atualizarCotas();
   </script>
 </body>
