@@ -1,58 +1,125 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Rifa do Jão</title>
-  <link rel="stylesheet" href="style.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&display=swap" rel="stylesheet" />
-</head>
-<body>
-  <div class="container">
-    <h1>🎮 Rifa do Controle 8BitDo</h1>
-    <p class="descricao">Participe da rifa e concorra a um controle 8BitDo Wukong compatível com PC e celular!</p>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&display=swap');
 
-    <img src="controle.jpg" alt="Prêmio da Rifa" class="premio-img" />
+body {
+  font-family: 'Cinzel', serif;
+  margin: 0;
+  padding: 0;
+  background: url('fundo.jpg') no-repeat center center fixed;
+  background-size: cover;
+  color: #000000;
+}
 
-    <h2>Escolha seus números (R$2 cada):</h2>
-    <div id="cotas" class="cotas"></div>
+.container {
+  max-width: 1000px;
+  margin: 50px auto;
+  padding: 30px;
+  background: rgba(0, 0, 0, 0.85);
+  border-radius: 15px;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.6);
+  text-align: center;
+}
 
-    <button onclick="confirmarCotas()">Reservar Cotas</button>
-  </div>
+h1 {
+  font-size: 2rem;
+  color: #f9b234;
+  margin-bottom: 10px;
+}
 
-  <!-- Supabase SDK -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
+.descricao {
+  font-size: 1.1rem;
+  color: #ddd;
+  margin-bottom: 20px;
+}
 
-  <script>
-    const supabaseUrl = "https://oiwhhumfobnpnwxzdtaa.supabase.co";
-    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9pd2hodW1mb2JucG53eHpkdGFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5MTM2MTQsImV4cCI6MjA2NzQ4OTYxNH0.H24RF9v5zHOddlXtU_kU_SEuV7xpcZEe_lQZRhLzvFM";
-    const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+.premio-img {
+  width: 100%;
+  max-width: 400px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+}
 
-    const cotasContainer = document.getElementById("cotas");
-    const TOTAL_COTAS = 150;
-    let cotasSelecionadas = [];
+h2 {
+  color: #f9b234;
+  margin-bottom: 10px;
+}
 
-    async function atualizarCotas() {
-      cotasContainer.innerHTML = "";
-      cotasSelecionadas = [];
+.cotas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
+}
 
-      const { data: cotas, error } = await supabase
-        .from('cotas')
-        .select('*');
+.cotas div {
+  background: #222;
+  border: 2px solid #555;
+  padding: 10px 0;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  color: #fff;
+  transition: 0.2s ease;
+}
 
-      if (error) {
-        console.error("Erro ao carregar cotas do Supabase:", error);
-        cotasContainer.textContent = "Erro ao carregar cotas.";
-        return;
-      }
+.cotas div:hover {
+  background: #333;
+  border-color: #f9b234;
+}
 
-      const ocupadas = {};
-      cotas.forEach(cota => {
-        ocupadas[parseInt(cota.id)] = cota;
-      });
+.cotas .selecionada {
+  background: #f9b234;
+  color: #000;
+  border-color: #f9b234;
+}
 
-      for (let i = 1; i <= TOTAL_COTAS; i++) {
-        const cota = document.createElement("div");
-        cota.textContent = i;
+.cotas .paga {
+  background: #b30000;
+  color: #fff;
+  cursor: not-allowed;
+  border-color: #900;
+}
 
-        const da
+.cotas .ocupada {
+  background: #666;
+  color: #bbb;
+  cursor: not-allowed;
+}
+
+button {
+  background: linear-gradient(90deg, #f9b234, #d88b00);
+  color: #000;
+  border: none;
+  padding: 12px 30px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+
+button:hover {
+  filter: brightness(1.1);
+}
+
+.container p {
+  color: #f9b234;
+  font-size: 1.1rem;
+  line-height: 1.5;
+}
+
+textarea {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  resize: none;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+#pixArea img {
+  margin-top: 10px;
+  max-width: 200px;
+}
