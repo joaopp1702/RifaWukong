@@ -62,6 +62,7 @@
       filter: brightness(1.1);
     }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
 </head>
 <body>
   <h1>Reserve suas cotas!</h1>
@@ -72,25 +73,35 @@
   <script>
     // Configurações
     const TOTAL_COTAS = 50;
-    const urlEdgeFunction = "https://SEU-PROJETO.supabase.co/functions/v1/reservarCotas"; // Troque aqui!
+    const SUPABASE_URL = "https://oiwhhumfobnpnwxzdtaa.supabase.co"; // seu Supabase URL
+    const SUPABASE_ANON_KEY = "sua_anon_key_aqui"; // sua chave anon (não coloque no público se for privado!)
+    const urlEdgeFunction = "https://oiwhhumfobnpnwxzdtaa.functions.supabase.co/reservarCotas"; // URL da edge function
+
+    // Inicializa cliente Supabase
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     // Estado
     let cotasSelecionadas = [];
     let cotasOcupadas = [];
 
-    // Criar grid das cotas
     const cotasContainer = document.getElementById("cotas");
     const confirmarBtn = document.getElementById("confirmarBtn");
 
-    // Simulação: buscar cotas ocupadas no backend (aqui vc deve fazer um fetch na sua API)
-    // Por hora, vamos assumir vazio. Ideal: criar endpoint para pegar cotas reservadas
+    // Busca cotas reservadas do Supabase (status != 'livre')
     async function buscarCotasOcupadas() {
-      // Substituir por fetch real no Supabase (ex: from('cotas').select(...) via anon key)
-      // Aqui só um array de exemplo:
-      return []; // Exemplo: [2, 5, 10]
+      const { data, error } = await supabase
+        .from("cotas")
+        .select("id")
+        .not("status", "eq", "livre");
+
+      if (error) {
+        alert("Erro ao buscar cotas ocupadas: " + error.message);
+        return [];
+      }
+      return data.map(item => item.id);
     }
 
-    // Construir a lista visual
+    // Monta a grade de cotas
     async function montarCotas() {
       cotasOcupadas = await buscarCotasOcupadas();
 
@@ -119,7 +130,7 @@
       }
     }
 
-    // Confirmar cotas: chama Edge Function
+    // Confirmar cotas - chama Edge Function para reservar
     confirmarBtn.onclick = async () => {
       if (cotasSelecionadas.length === 0) {
         alert("Selecione pelo menos uma cota!");
@@ -138,7 +149,6 @@
         return;
       }
 
-      // Chamar a função Edge
       try {
         const res = await fetch(urlEdgeFunction, {
           method: "POST",
@@ -150,11 +160,12 @@
 
         if (!res.ok) {
           alert("Erro ao reservar cotas: " + (json.error || "Erro desconhecido"));
-          await montarCotas();
+          await montarCotas(); // Atualiza lista
           return;
         }
 
-        // Redirecionar para página de pagamento com dados na query string
+        alert("Cotas reservadas com sucesso! Agora finalize o pagamento.");
+        // Redirecione para a página de pagamento, passando os dados (exemplo)
         const query = `?nome=${encodeURIComponent(nome)}&telefone=${encodeURIComponent(telefone)}&cotas=${cotasSelecionadas.join(",")}`;
         window.location.href = "pagamento.html" + query;
 
