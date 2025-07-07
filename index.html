@@ -3,134 +3,167 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Rifa do Jão</title>
-  <link rel="stylesheet" href="style.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&display=swap" rel="stylesheet">
+  <title>Reservar Cotas - Rifa do Jão</title>
+  <style>
+    body {
+      font-family: 'Cinzel', serif;
+      margin: 0; padding: 20px;
+      background: #111;
+      color: #f9b234;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h1 {
+      margin-bottom: 20px;
+    }
+    #cotas {
+      display: grid;
+      grid-template-columns: repeat(10, 50px);
+      gap: 8px;
+      max-width: 600px;
+      margin-bottom: 30px;
+    }
+    #cotas div {
+      background: #222;
+      border: 2px solid #555;
+      border-radius: 6px;
+      color: #fff;
+      font-weight: bold;
+      text-align: center;
+      line-height: 50px;
+      cursor: pointer;
+      user-select: none;
+      transition: 0.2s;
+    }
+    #cotas div.selecionada {
+      background: #f9b234;
+      color: #111;
+      border-color: #f9b234;
+    }
+    #cotas div.ocupada {
+      background: #555;
+      border-color: #444;
+      cursor: not-allowed;
+      color: #bbb;
+    }
+    button {
+      background: linear-gradient(90deg, #f9b234, #d88b00);
+      border: none;
+      padding: 12px 30px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      color: #000;
+      transition: filter 0.3s ease;
+    }
+    button:hover {
+      filter: brightness(1.1);
+    }
+  </style>
 </head>
 <body>
-  <div class="container">
-    <h1>🎮 Rifa do Controle 8BitDo</h1>
-    <p class="descricao">Participe da rifa e concorra a um controle 8BitDo Wukong compatível com PC e celular!</p>
+  <h1>Reserve suas cotas!</h1>
 
-    <img src="controle.jpg" alt="Prêmio da Rifa" class="premio-img" />
-
-    <h2>Escolha seus números (R$2 cada):</h2>
-    <div id="cotas" class="cotas"></div>
-
-    <button onclick="confirmarCotas()">Reservar Cotas</button>
-  </div>
-
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <div id="cotas"></div>
+  <button id="confirmarBtn">Confirmar cotas selecionadas</button>
 
   <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyAtB6H1PnAjM64GWyuo9PfI6iubJfH7YgE",
-      authDomain: "rifa-d7eb9.firebaseapp.com",
-      databaseURL: "https://rifa-d7eb9-default-rtdb.firebaseio.com",
-      projectId: "rifa-d7eb9",
-      storageBucket: "rifa-d7eb9.firebasestorage.app",
-      messagingSenderId: "1073573581341",
-      appId: "1:1073573581341:web:0cc0a60ac34ac3c0de6cf4",
-      measurementId: "G-ZLP1NR8603"
-    };
+    // Configurações
+    const TOTAL_COTAS = 50;
+    const urlEdgeFunction = "https://SEU-PROJETO.supabase.co/functions/v1/reservarCotas"; // Troque aqui!
 
-    firebase.initializeApp(firebaseConfig);
-  </script>
-
-  <!-- Script Principal -->
-  <script>
-    const cotasContainer = document.getElementById("cotas");
-    const TOTAL_COTAS = 150;
+    // Estado
     let cotasSelecionadas = [];
-    const db = firebase.database();
-function atualizarCotas() {
-  db.ref("cotas").once("value").then(snapshot => {
-    const ocupadas = snapshot.val() || {};
-    cotasContainer.innerHTML = "";
-    cotasSelecionadas = [];
+    let cotasOcupadas = [];
 
-    for (let i = 1; i <= TOTAL_COTAS; i++) {
-      const cota = document.createElement("div");
-      cota.textContent = i;
+    // Criar grid das cotas
+    const cotasContainer = document.getElementById("cotas");
+    const confirmarBtn = document.getElementById("confirmarBtn");
 
-      const dadosCota = ocupadas[i];
-
-      if (dadosCota && dadosCota.status === "pago") {
-        cota.classList.add("paga");
-        cota.style.background = "#b30000";
-        cota.style.color = "#fff";
-        cota.style.cursor = "not-allowed";
-      } else if (dadosCota && dadosCota.status === "reservada") {
-        cota.classList.add("ocupada");
-        cota.style.background = "#999";
-        cota.style.color = "#fff";
-        cota.style.cursor = "not-allowed";
-      } else {
-        cota.onclick = () => {
-          if (cota.classList.contains("selecionada")) {
-            cota.classList.remove("selecionada");
-            cotasSelecionadas = cotasSelecionadas.filter(n => n !== i);
-          } else {
-            cota.classList.add("selecionada");
-            cotasSelecionadas.push(i);
-          }
-        };
-      }
-
-      cotasContainer.appendChild(cota);
+    // Simulação: buscar cotas ocupadas no backend (aqui vc deve fazer um fetch na sua API)
+    // Por hora, vamos assumir vazio. Ideal: criar endpoint para pegar cotas reservadas
+    async function buscarCotasOcupadas() {
+      // Substituir por fetch real no Supabase (ex: from('cotas').select(...) via anon key)
+      // Aqui só um array de exemplo:
+      return []; // Exemplo: [2, 5, 10]
     }
-  }).catch(error => {
-    console.error("Erro ao carregar cotas do Firebase:", error);
-  });
-}
 
-          cotasContainer.appendChild(cota);
+    // Construir a lista visual
+    async function montarCotas() {
+      cotasOcupadas = await buscarCotasOcupadas();
+
+      cotasContainer.innerHTML = "";
+      cotasSelecionadas = [];
+
+      for (let i = 1; i <= TOTAL_COTAS; i++) {
+        const div = document.createElement("div");
+        div.textContent = i;
+
+        if (cotasOcupadas.includes(i)) {
+          div.classList.add("ocupada");
+          div.title = "Cota já reservada";
+        } else {
+          div.onclick = () => {
+            if (div.classList.contains("selecionada")) {
+              div.classList.remove("selecionada");
+              cotasSelecionadas = cotasSelecionadas.filter(x => x !== i);
+            } else {
+              div.classList.add("selecionada");
+              cotasSelecionadas.push(i);
+            }
+          };
         }
-      }).catch(error => {
-        console.error("Erro ao carregar cotas:", error);
-      });
+        cotasContainer.appendChild(div);
+      }
     }
 
-    function confirmarCotas() {
+    // Confirmar cotas: chama Edge Function
+    confirmarBtn.onclick = async () => {
       if (cotasSelecionadas.length === 0) {
-        alert("Selecione pelo menos uma cota.");
+        alert("Selecione pelo menos uma cota!");
         return;
       }
 
-      const nome = prompt("Digite seu nome:");
-      const telefone = prompt("Digite seu número de WhatsApp (com DDD):");
-
-      if (!nome || !telefone) {
-        alert("Nome e telefone são obrigatórios!");
+      const nome = prompt("Digite seu nome ou apelido:");
+      if (!nome) {
+        alert("Nome obrigatório!");
         return;
       }
 
-      db.ref("cotas").once("value").then(snapshot => {
-        const ocupadas = snapshot.val() || {};
-        const indisponiveis = cotasSelecionadas.filter(n => ocupadas[n]);
+      const telefone = prompt("Digite seu WhatsApp (com DDD):");
+      if (!telefone) {
+        alert("WhatsApp obrigatório!");
+        return;
+      }
 
-        if (indisponiveis.length > 0) {
-          alert("As cotas já reservadas: " + indisponiveis.join(", "));
-          atualizarCotas();
+      // Chamar a função Edge
+      try {
+        const res = await fetch(urlEdgeFunction, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ nome, telefone, cotas: cotasSelecionadas })
+        });
+
+        const json = await res.json();
+
+        if (!res.ok) {
+          alert("Erro ao reservar cotas: " + (json.error || "Erro desconhecido"));
+          await montarCotas();
           return;
         }
 
-        cotasSelecionadas.forEach(numero => {
-          db.ref("cotas/" + numero).set({
-            nome: nome,
-            telefone: telefone,
-            status: "reservada"
-          });
-        });
-
+        // Redirecionar para página de pagamento com dados na query string
         const query = `?nome=${encodeURIComponent(nome)}&telefone=${encodeURIComponent(telefone)}&cotas=${cotasSelecionadas.join(",")}`;
         window.location.href = "pagamento.html" + query;
-      });
-    }
 
-    atualizarCotas();
+      } catch (error) {
+        alert("Erro de comunicação: " + error.message);
+      }
+    };
+
+    montarCotas();
   </script>
 </body>
 </html>
