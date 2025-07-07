@@ -13,6 +13,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
+      min-height: 100vh;
     }
     h1 {
       margin-bottom: 20px;
@@ -42,10 +43,16 @@
       border-color: #f9b234;
     }
     #cotas div.ocupada {
-      background: #555;
-      border-color: #444;
+      background: #999;
+      border-color: #777;
       cursor: not-allowed;
-      color: #bbb;
+      color: #ddd;
+    }
+    #cotas div.paga {
+      background: #b30000;
+      border-color: #7a0000;
+      cursor: not-allowed;
+      color: #fff;
     }
     button {
       background: linear-gradient(90deg, #f9b234, #d88b00);
@@ -72,52 +79,59 @@
 
   <script>
     // Configurações
-    const TOTAL_COTAS = 50;
-    const SUPABASE_URL = "https://oiwhhumfobnpnwxzdtaa.supabase.co"; // seu Supabase URL
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9pd2hodW1mb2JucG53eHpkdGFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5MTM2MTQsImV4cCI6MjA2NzQ4OTYxNH0.H24RF9v5zHOddlXtU_kU_SEuV7xpcZEe_lQZRhLzvFM"; // sua chave anon (não coloque no público se for privado!)
-    const urlEdgeFunction = "https://oiwhhumfobnpnwxzdtaa.functions.supabase.co/reservarCotas"; // URL da edge function
+    const TOTAL_COTAS = 150;
+    const SUPABASE_URL = "https://oiwhhumfobnpnwxzdtaa.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9pd2hodW1mb2JucG53eHpkdGFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5MTM2MTQsImV4cCI6MjA2NzQ4OTYxNH0.H24RF9v5zHOddlXtU_kU_SEuV7xpcZEe_lQZRhLzvFM";
+    const URL_EDGE_FUNCTION = "https://oiwhhumfobnpnwxzdtaa.functions.supabase.co/reservarCotas";
 
-    // Inicializa cliente Supabase
+    // Inicializa Supabase
     const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    // Estado
-    let cotasSelecionadas = [];
-    let cotasOcupadas = [];
 
     const cotasContainer = document.getElementById("cotas");
     const confirmarBtn = document.getElementById("confirmarBtn");
 
-    // Busca cotas reservadas do Supabase (status != 'livre')
-    async function buscarCotasOcupadas() {
+    let cotasSelecionadas = [];
+
+    // Busca cotas reservadas e pagas para marcar na interface
+    async function buscarCotas() {
       const { data, error } = await supabase
         .from("cotas")
-        .select("id")
-        .not("status", "eq", "livre");
+        .select("id, status");
 
       if (error) {
-        alert("Erro ao buscar cotas ocupadas: " + error.message);
+        alert("Erro ao buscar cotas: " + error.message);
         return [];
       }
-      return data.map(item => item.id);
+      return data;
     }
 
-    // Monta a grade de cotas
+    // Monta grid com cotas e estados
     async function montarCotas() {
-      cotasOcupadas = await buscarCotasOcupadas();
+      const cotas = await buscarCotas();
+      const ocupadasMap = {};
+
+      cotas.forEach(c => {
+        ocupadasMap[c.id] = c.status;
+      });
 
       cotasContainer.innerHTML = "";
       cotasSelecionadas = [];
 
-      for (let i = 1; i <= TOTAL_COTAS; i++) {
+      for(let i = 1; i <= TOTAL_COTAS; i++) {
         const div = document.createElement("div");
         div.textContent = i;
 
-        if (cotasOcupadas.includes(i)) {
+        const status = ocupadasMap[i];
+
+        if(status === "pago") {
+          div.classList.add("paga");
+          div.title = "Cota paga";
+        } else if (status === "reservada") {
           div.classList.add("ocupada");
-          div.title = "Cota já reservada";
+          div.title = "Cota reservada";
         } else {
           div.onclick = () => {
-            if (div.classList.contains("selecionada")) {
+            if(div.classList.contains("selecionada")) {
               div.classList.remove("selecionada");
               cotasSelecionadas = cotasSelecionadas.filter(x => x !== i);
             } else {
@@ -130,47 +144,48 @@
       }
     }
 
-    // Confirmar cotas - chama Edge Function para reservar
+    // Confirmar reserva
     confirmarBtn.onclick = async () => {
-      if (cotasSelecionadas.length === 0) {
+      if(cotasSelecionadas.length === 0) {
         alert("Selecione pelo menos uma cota!");
         return;
       }
 
       const nome = prompt("Digite seu nome ou apelido:");
-      if (!nome) {
+      if(!nome) {
         alert("Nome obrigatório!");
         return;
       }
 
       const telefone = prompt("Digite seu WhatsApp (com DDD):");
-      if (!telefone) {
+      if(!telefone) {
         alert("WhatsApp obrigatório!");
         return;
       }
 
       try {
-        const res = await fetch(urlEdgeFunction, {
+        const res = await fetch(URL_EDGE_FUNCTION, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {"Content-Type": "application/json"},
           body: JSON.stringify({ nome, telefone, cotas: cotasSelecionadas })
         });
 
         const json = await res.json();
 
-        if (!res.ok) {
+        if(!res.ok) {
           alert("Erro ao reservar cotas: " + (json.error || "Erro desconhecido"));
-          await montarCotas(); // Atualiza lista
+          await montarCotas();
           return;
         }
 
         alert("Cotas reservadas com sucesso! Agora finalize o pagamento.");
-        // Redirecione para a página de pagamento, passando os dados (exemplo)
+
+        // Redireciona para página de pagamento passando os dados
         const query = `?nome=${encodeURIComponent(nome)}&telefone=${encodeURIComponent(telefone)}&cotas=${cotasSelecionadas.join(",")}`;
         window.location.href = "pagamento.html" + query;
 
-      } catch (error) {
-        alert("Erro de comunicação: " + error.message);
+      } catch(e) {
+        alert("Erro de comunicação: " + e.message);
       }
     };
 
